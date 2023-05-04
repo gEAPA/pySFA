@@ -25,7 +25,7 @@ setup_args = dict(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
     ],
-    package_data={'sfa': ['data/*.csv']},
+    package_data={'pysfa': ['data/*.csv']},
 )
 
 install_requires = [
