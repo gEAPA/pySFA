@@ -1,10 +1,14 @@
-# SFA with MLE
+# Stochastic Frontier Analysis (SFA)
 
-- The repo provides a python function to implement maximum likelihood estimation for a SFA production model.
-  - `sfa.py`: main function
-  - `SFA_test.py`: a simple example
-  - `41Firm.csv`: data from `Coelli et al. (1996)`
 
-- The script `sfa.py` follows the function `sfa()` of R package [`Benchmarking`](https://cran.r-project.org/web/packages/Benchmarking/index.html).
+## Installation
 
-- Any follow-up development of this repo is welcome.
+The [`pyStoNED`](https://pypi.org/project/pysfa/) package is now avaiable on PyPI and the latest development version can be installed from the Github repository [`pySFA`](https://github.com/ds2010/pySFA). Please feel free to download and test it. We welcome any bug reports and feedback.
+
+#### PyPI [![PyPI version](https://img.shields.io/pypi/v/pysfa.svg?maxAge=3600)](https://pypi.org/project/pysfa/)[![PyPI downloads](https://img.shields.io/pypi/dm/pysfa.svg?maxAge=21600)](https://pypistats.org/packages/pysfa)
+
+    pip install pysfa
+
+#### GitHub
+
+    pip install -U git+https://github.com/ds2010/pySFA
