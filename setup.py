@@ -4,7 +4,7 @@ with open('README.md') as readme_file:
     README = readme_file.read()
 
 setup_args = dict(
-    name='sfa',
+    name='pysfa',
     version='0.0.1',
     description='Stochastic Frontier Analysis',
     long_description_content_type="text/markdown",
