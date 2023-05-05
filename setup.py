@@ -5,7 +5,7 @@ with open('README.md') as readme_file:
 
 setup_args = dict(
     name='pysfa',
-    version='0.0.1',
+    version='0.1',
     description='Stochastic Frontier Analysis',
     long_description_content_type="text/markdown",
     long_description=README,
