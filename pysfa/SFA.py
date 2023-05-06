@@ -38,7 +38,7 @@ class SFA:
             pz = np.maximum(norm.cdf(z), 1e-323)
             return N/2*log(pi/2) + N/2*log(s) - np.sum(np.log(pz)) + N/2.0
 
-        fit = opt.minimize(__loglik, parm, method='L-BFGS-B').x
+        fit = opt.minimize(__loglik, parm, method='BFGS').x
 
         # beta, residuals, lambda, sigma^2
         K = self.x.shape[1] + 1
