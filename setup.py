@@ -5,13 +5,13 @@ with open('README.md') as readme_file:
 
 setup_args = dict(
     name='pysfa',
-    version='0.2',
+    version='0.3',
     description='A Python Package for Stochastic Frontier Analysis',
     long_description_content_type="text/markdown",
     long_description=README,
     license='MIT',
     packages=find_packages(),
-    author='Sheng Dai',
+    author='Sheng Dai, Zhiqiang Liao',
     author_email='sheng.dai@utu.fi',
     keywords=['SFA', 'MLE', 'TE'],
     url='https://github.com/gEAPA/pySFA',
@@ -30,6 +30,7 @@ setup_args = dict(
 
 install_requires = [
     'numpy>=1.19.2',
+    'pandas>=1.1.3',
     'scipy>=1.5.2',
     'scikit-learn>=1.2.2',
 ]
