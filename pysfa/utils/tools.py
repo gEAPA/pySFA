@@ -25,7 +25,7 @@ def assert_valid_basic_data(y, x, fun):
 
     if len(y_shape) == 2 and y_shape[1] != 1:
         raise ValueError(
-            "The output must be one dimension.")
+            "The output must be one dimensional array.")
 
     if y_shape[0] != x_shape[0]:
         raise ValueError(
