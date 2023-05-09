@@ -1,39 +1,38 @@
-# Frontier
+# function
 FUN_PROD = "prod"
 """
-FUN_PROD: Production frontier.
+FUN_PROD: Production function.
 """
 
 FUN_COST = "cost"
 """
-FUN_COST: Cost frontier.
+FUN_COST: Cost function.
 """
 
 FUN_Categories = {
-    FUN_PROD: "Production frontier",
-    FUN_COST: "Cost frontier"
+    FUN_PROD: "Production function",
+    FUN_COST: "Cost function"
 }
 
 
 # Technical inefficiency
 TE_teJ = "teJ"
 """
-RED_MOM: Method of moments.
+TE_teJ: Using conditional mean approach.
 """
 
 TE_te = "te"
 """
-RED_QLE: Quassi-likelihood estimation.
+TE_te: Minimizing the mean square error.
 """
 
 TE_teMod = "teMod"
 """
-RED_KDE: Kernel deconvolution estimation.
+TE_teMod: Using conditional mode approach.
 """
 
 RED_Categories = {
-    TE_teJ: "Method of moments",
-    TE_te: "Quassi-likelihood estimation",
-    TE_teMod: "Kernel deconvolution estimation"
+    TE_teJ: "Conditional mean",
+    TE_te: "Mean square error",
+    TE_teMod: "Conditional mode"
 }
-

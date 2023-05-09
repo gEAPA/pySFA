@@ -19,8 +19,7 @@ class SFA:
               x (float) of shape (n, d): input variables.
               fun (String, optional): FUN_PROD (production frontier) or FUN_COST (cost frontier). Defaults to FUN_PROD.
           """
-        self.y, self.x= tools.assert_valid_basic_data(y, x, fun)
-
+        self.y, self.x = tools.assert_valid_basic_data(y, x, fun)
         self.fun, self.lamda0, self.method = fun, lamda0, method
 
     def __mle(self):
@@ -28,7 +27,6 @@ class SFA:
         # initial OLS regression
         reg = LinearRegression().fit(X=self.x, y=self.y)
         beta0 = np.concatenate(([reg.intercept_], reg.coef_), axis=0)
-        print(beta0)
         parm = np.concatenate((beta0, [self.lamda0]), axis=0)
 
         # Maximum Likelihood Estimation
@@ -105,7 +103,7 @@ class SFA:
         elif self.method == TE_teMod:
             return self.__teMod()
         else:
-            raise ValueError("Undefined estimation technique.")
+            raise ValueError("Undefined decomposition technique.")
 
     def get_beta(self):
         '''Return the estimated coefficients'''

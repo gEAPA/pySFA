@@ -25,13 +25,14 @@ def assert_valid_basic_data(y, x, fun):
 
     if len(y_shape) == 2 and y_shape[1] != 1:
         raise ValueError(
-            "The multidimensional output data is supported by direciontal based models.")
+            "The output must be one dimension.")
 
     if y_shape[0] != x_shape[0]:
         raise ValueError(
             "x and y must have the same length.")
 
     return y, x
+
 
 def trans_list(li):
     if type(li) == list:
@@ -56,4 +57,4 @@ def to_2d_list(li):
         for value in li:
             rl.append([value])
         return rl
-    return li      
+    return li
