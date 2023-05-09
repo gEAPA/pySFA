@@ -15,9 +15,9 @@ class SFA:
         """SFA model
 
           Args:
-              y (float) of shape (n,): output variable. 
-              x (float) of shape (n, d): input variables.
-              fun (String, optional): FUN_PROD (production frontier) or FUN_COST (cost frontier). Defaults to FUN_PROD.
+              y (float) : output variable. 
+              x (float) : input variables.
+              fun (String, optional): FUN_PROD (production function) or FUN_COST (cost function). Defaults to FUN_PROD.
           """
         self.y, self.x = tools.assert_valid_basic_data(y, x, fun)
         self.fun, self.lamda0, self.method = fun, lamda0, method
@@ -52,6 +52,8 @@ class SFA:
         # sigma_u^2, sigma_v^2
         self.s2u = self.lamda**2 / (1+self.lamda**2) * self.sigma2
         self.s2v = self.sigma2 / (1+self.lamda**2)
+
+        return self.beta, self.residuals, self.lamda, self.sigma2, self.s2u, self.s2v
 
     def __resfun(self, beta):
         return self.y - beta[0] - np.dot(self.x, beta[1:])
@@ -116,24 +118,24 @@ class SFA:
 
     def get_beta(self):
         '''Return the estimated coefficients'''
-        return self.beta
+        return self.__mle()[0]
 
     def get_residuals(self):
         '''Return the residuals'''
-        return self.residuals
-
-    def get_sigma2(self):
-        '''Return the sigma2'''
-        return self.sigma2
-
-    def get_sigmau2(self):
-        '''Return the sigma_u**2'''
-        return self.s2u
-
-    def get_sigmav2(self):
-        '''Return the sigma_v**2'''
-        return self.s2v
+        return self.__mle()[1]
 
     def get_lambda(self):
         '''Return the lambda'''
-        return self.lamda
+        return self.__mle()[2]
+
+    def get_sigma2(self):
+        '''Return the sigma2'''
+        return self.__mle()[3]
+
+    def get_sigmau2(self):
+        '''Return the sigma_u**2'''
+        return self.__mle()[4]
+
+    def get_sigmav2(self):
+        '''Return the sigma_v**2'''
+        return self.__mle()[5]

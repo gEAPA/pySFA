@@ -12,12 +12,10 @@ The [`pySFA`](https://pypi.org/project/pysfa/) package is now avaiable on PyPI a
 
     pip install -U git+https://github.com/gEAPA/pySFA
 
-
 ## Authors
 
 - [Sheng Dai](https://daisheng.io), PhD, Turku School of Economics, University of Turku, Finland.
 - [Zhiqiang Liao](https://liaozhiqiang.com), Doctoral Researcher, Aalto University School of Business, Finland.
-
 
 ## Demo: Estimating a production function by `pySFA`
 
@@ -39,6 +37,9 @@ res = SFA.SFA(y, x, fun=SFA.FUN_PROD, lamda0=1, method=SFA.TE_teJ)
 
 # print estimates
 print(res.get_beta())
+print(res.get_residuals())
+
+# print estimated parameters
 print(res.get_lambda())
 print(res.get_sigma2())
 print(res.get_sigmau2())
@@ -47,4 +48,3 @@ print(res.get_sigmav2())
 # print TE
 print(res.get_technical_efficiency())
 ```
-
