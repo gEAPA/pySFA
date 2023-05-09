@@ -32,7 +32,7 @@ class SFA:
         # Maximum Likelihood Estimation
         def __loglik(parm):
             ''' Log-likelihood function'''
-            N, K = len(self.x[0]), len(self.x[1]) + 1
+            N, K = len(self.x), len(self.x[0]) + 1
             beta0, lamda0 = parm[0:K], parm[K]
             e = self.__resfun(beta0)
             s = np.sum(e**2)/N
@@ -43,7 +43,7 @@ class SFA:
         fit = opt.minimize(__loglik, parm, method='BFGS').x
 
         # beta, residuals, lambda, sigma^2
-        K = len(self.x[1]) + 1
+        K = len(self.x[0]) + 1
         self.beta = fit[0:K]
         self.residuals = self.__resfun(self.beta)
         self.lamda = fit[K]
@@ -60,7 +60,10 @@ class SFA:
         '''Efficiencies estimates using the conditional mean approach 
             Jondrow et al. (1982, 235)'''
 
-        self.sign = 1
+        if self.fun == FUN_COST:
+            self.sign == -1
+        else:
+            self.sign = 1
         self.ustar = - self.sign * self.residuals * \
             self.lamda**2/(1+self.lamda**2)
         self.sstar = self.lamda/(1+self.lamda**2)*sqrt(self.sigma2)
@@ -71,7 +74,10 @@ class SFA:
         '''Efficiencies estimated by minimizing the mean square error; 
             Eq. (7.21) in Bogetoft and Otto (2011, 219) and Battese and Coelli (1988, 392)'''
 
-        self.sign = 1
+        if self.fun == FUN_COST:
+            self.sign == -1
+        else:
+            self.sign = 1
         self.ustar = - self.sign * self.residuals * \
             self.lamda**2/(1+self.lamda**2)
         self.sstar = self.lamda/(1+self.lamda**2)*sqrt(self.sigma2)
@@ -83,7 +89,10 @@ class SFA:
         '''Efficiencies estimates using the conditional mode approach;
             Bogetoft and Otto (2011, 219), Jondrow et al. (1982, 235)'''
 
-        self.sign = 1
+        if self.fun == FUN_COST:
+            self.sign == -1
+        else:
+            self.sign = 1
         self.ustar = - self.sign * self.residuals * \
             self.lamda**2/(1+self.lamda**2)
         return np.exp(np.minimum(0, -self.ustar))
