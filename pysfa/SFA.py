@@ -4,6 +4,7 @@ from math import sqrt, pi, log
 from scipy.stats import norm
 import scipy.optimize as opt
 from .constant import FUN_PROD, FUN_COST, TE_teJ, TE_te, TE_teMod
+from .utils import tools
 
 
 class SFA:
@@ -14,23 +15,26 @@ class SFA:
         """SFA model
 
           Args:
-              y (float): output variable. 
-              x (float): input variables.
+              y (float) of shape (n,): output variable. 
+              x (float) of shape (n, d): input variables.
               fun (String, optional): FUN_PROD (production frontier) or FUN_COST (cost frontier). Defaults to FUN_PROD.
           """
-        self.x, self.y, self.fun, self.lamda0, self.method = x, y, fun, lamda0, method
+        self.y, self.x= tools.assert_valid_basic_data(y, x, fun)
+
+        self.fun, self.lamda0, self.method = fun, lamda0, method
 
     def __mle(self):
 
         # initial OLS regression
         reg = LinearRegression().fit(X=self.x, y=self.y)
         beta0 = np.concatenate(([reg.intercept_], reg.coef_), axis=0)
+        print(beta0)
         parm = np.concatenate((beta0, [self.lamda0]), axis=0)
 
         # Maximum Likelihood Estimation
         def __loglik(parm):
             ''' Log-likelihood function'''
-            N, K = self.x.shape[0], self.x.shape[1] + 1
+            N, K = len(self.x[0]), len(self.x[1]) + 1
             beta0, lamda0 = parm[0:K], parm[K]
             e = self.__resfun(beta0)
             s = np.sum(e**2)/N
@@ -41,7 +45,7 @@ class SFA:
         fit = opt.minimize(__loglik, parm, method='BFGS').x
 
         # beta, residuals, lambda, sigma^2
-        K = self.x.shape[1] + 1
+        K = len(self.x[1]) + 1
         self.beta = fit[0:K]
         self.residuals = self.__resfun(self.beta)
         self.lamda = fit[K]
