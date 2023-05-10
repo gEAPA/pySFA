@@ -14,6 +14,22 @@ FUN_Categories = {
     FUN_COST: "Cost function"
 }
 
+# Log Likelihood functions
+LOG_hnormal = "hnormal"
+"""
+LOG_hnormal: Log-Lik normal/half-normal distribution.
+"""
+
+LOG_tnormal = "tnormal"
+"""
+LOG_hnormal: Log-Lik normal/truncated-normal distribution.
+"""
+
+LOG_exp = "exp"
+"""
+LOG_hnormal: Log-Lik normal/exponential distribution.
+"""
+
 
 # Technical inefficiency
 TE_teJ = "teJ"

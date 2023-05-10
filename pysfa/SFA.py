@@ -3,7 +3,7 @@ from sklearn.linear_model import LinearRegression
 from math import sqrt, pi, log
 from scipy.stats import norm
 import scipy.optimize as opt
-from .constant import FUN_PROD, FUN_COST, TE_teJ, TE_te, TE_teMod
+from .constant import FUN_PROD, FUN_COST, TE_teJ, TE_te, TE_teMod, LOG_hnormal, LOG_tnormal, LOG_exp
 from .utils import tools
 
 
@@ -11,7 +11,7 @@ class SFA:
     """Stochastic frontier analysis (SFA) 
     """
 
-    def __init__(self, y, x, fun=FUN_PROD, lamda0=1, method=TE_teJ):
+    def __init__(self, y, x, loglik=LOG_hnormal, fun=FUN_PROD, lamda0=1, method=TE_teJ):
         """SFA model
 
           Args:
@@ -21,6 +21,7 @@ class SFA:
           """
         self.y, self.x = tools.assert_valid_basic_data(y, x, fun)
         self.fun, self.lamda0, self.method = fun, lamda0, method
+        self.loglik = loglik
 
     def __mle(self):
 
@@ -30,17 +31,35 @@ class SFA:
         parm = np.concatenate((beta0, [self.lamda0]), axis=0)
 
         # Maximum Likelihood Estimation
-        def __loglik(parm):
-            ''' Log-likelihood function'''
+        def __loglik_hnormal(parm):
+            ''' Log-likelihood function normal/half-normal distribution'''
             N, K = len(self.x), len(self.x[0]) + 1
             beta0, lamda0 = parm[0:K], parm[K]
-            e = self.__resfun(beta0)
-            s = np.sum(e**2)/N
-            z = -lamda0*e/sqrt(s)
+            res_ols = self.__resfun(beta0)
+            sig2 = np.sum(res_ols**2)/N
+            z  = -lamda0*res_ols/sqrt(sig2)
             pz = np.maximum(norm.cdf(z), 1e-323)
-            return N/2*log(pi/2) + N/2*log(s) - np.sum(np.log(pz)) + N/2.0
+            return N/2*log(pi/2) + N/2*log(sig2) - np.sum(np.log(pz)) + N/2.0
+        
+        def __loglik_exp(parm):
+            ''' Log-likelihood function normal/truncated-normal distribution'''
+            N, K = len(self.x), len(self.x[0]) + 1
+            beta0 = parm[0:K]
+            res_ols = self.__resfun(beta0)
+            sigu2 = np.var(res_ols)*(1-2/pi)
+            sigv2 = np.var(res_ols)
+            z = (-res_ols-(sigv2/np.sqrt(sigu2))) / np.sqrt(sigv2)
+            pz = np.maximum(norm.cdf(z), 1e-323)
+            ret = N/2*log(sigu2) - N/2*(sigv2/sigu2) - np.sum(np.log(pz)) - np.sum(res_ols)/np.sqrt(sigu2)
 
-        fit = opt.minimize(__loglik, parm, method='BFGS').x
+            return ret
+
+        if self.loglik == LOG_hnormal:
+            maxlik_ = __loglik_hnormal
+        elif self.loglik == LOG_exp:
+            maxlik_ = __loglik_exp
+
+        fit = opt.minimize(maxlik_, parm, method='BFGS').x
 
         # beta, residuals, lambda, sigma^2
         K = len(self.x[0]) + 1
