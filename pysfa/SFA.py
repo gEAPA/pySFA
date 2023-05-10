@@ -42,7 +42,7 @@ class SFA:
             return N/2*log(pi/2) + N/2*log(sig2) - np.sum(np.log(pz)) + N/2.0
         
         def __loglik_exp(parm):
-            ''' Log-likelihood function normal/truncated-normal distribution'''
+            ''' Log-likelihood function normal/exponential distribution'''
             N, K = len(self.x), len(self.x[0]) + 1
             beta0 = parm[0:K]
             res_ols = self.__resfun(beta0)
@@ -50,9 +50,7 @@ class SFA:
             sigv2 = np.var(res_ols)
             z = (-res_ols-(sigv2/np.sqrt(sigu2))) / np.sqrt(sigv2)
             pz = np.maximum(norm.cdf(z), 1e-323)
-            ret = N/2*log(sigu2) - N/2*(sigv2/sigu2) - np.sum(np.log(pz)) - np.sum(res_ols)/np.sqrt(sigu2)
-
-            return ret
+            return N/2*log(sigu2) - N/2*(sigv2/sigu2) - np.sum(np.log(pz)) - np.sum(res_ols)/np.sqrt(sigu2)
 
         if self.loglik == LOG_hnormal:
             maxlik_ = __loglik_hnormal
