@@ -33,7 +33,7 @@ y = np.log(df.y)
 x = np.log(df.x)
 
 # Estimate SFA model
-res = SFA.SFA(y, x, fun=SFA.FUN_PROD, lamda0=1, method=SFA.TE_teJ)
+res = SFA.SFA(y, x, fun=SFA.FUN_PROD, method=SFA.TE_teJ)
 
 # print estimates
 print(res.get_beta())
