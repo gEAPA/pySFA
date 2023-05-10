@@ -11,28 +11,39 @@ class SFA:
     """Stochastic frontier analysis (SFA) 
     """
 
-    def __init__(self, y, x, fun=FUN_PROD, lamda0=1, method=TE_teJ):
+    def __init__(self, y, x, fun=FUN_PROD, intercept=True, lamda0=1, method=TE_teJ):
         """SFA model
 
           Args:
               y (float) : output variable. 
               x (float) : input variables.
+              intercept (bool, optional): whether to include intercept. Defaults to True.
+              lamda0 (float, optional): initial value of lambda. Defaults to 1.
               fun (String, optional): FUN_PROD (production function) or FUN_COST (cost function). Defaults to FUN_PROD.
+              method (String, optional): TE_teJ, TE_te, or TE_teMod. Defaults to TE_teJ.
           """
         self.y, self.x = tools.assert_valid_basic_data(y, x, fun)
-        self.fun, self.lamda0, self.method = fun, lamda0, method
+        self.fun, self.intercept, self.lamda0, self.method = fun, intercept, lamda0, method
 
     def __mle(self):
 
         # initial OLS regression
-        reg = LinearRegression().fit(X=self.x, y=self.y)
-        beta0 = np.concatenate(([reg.intercept_], reg.coef_), axis=0)
-        parm = np.concatenate((beta0, [self.lamda0]), axis=0)
+        if self.intercept == False:
+            reg = LinearRegression(fit_intercept=False).fit(X=self.x, y=self.y)
+            parm = np.concatenate((reg.coef_, [self.lamda0]), axis=0)
+        elif self.intercept == True:
+            reg = LinearRegression().fit(X=self.x, y=self.y)
+            parm = np.concatenate(
+                ([reg.intercept_], reg.coef_, [self.lamda0]), axis=0)
 
         # Maximum Likelihood Estimation
         def __loglik(parm):
             ''' Log-likelihood function'''
-            N, K = len(self.x), len(self.x[0]) + 1
+            N = len(self.x)
+            if self.intercept == False:
+                K = len(self.x[0])
+            elif self.intercept == True:
+                K = len(self.x[0]) + 1
             beta0, lamda0 = parm[0:K], parm[K]
             e = self.__resfun(beta0)
             s = np.sum(e**2)/N
@@ -43,7 +54,10 @@ class SFA:
         fit = opt.minimize(__loglik, parm, method='BFGS').x
 
         # beta, residuals, lambda, sigma^2
-        K = len(self.x[0]) + 1
+        if self.intercept == False:
+            K = len(self.x[0])
+        elif self.intercept == True:
+            K = len(self.x[0]) + 1
         self.beta = fit[0:K]
         self.residuals = self.__resfun(self.beta)
         self.lamda = fit[K]
@@ -56,7 +70,10 @@ class SFA:
         return self.beta, self.residuals, self.lamda, self.sigma2, self.s2u, self.s2v
 
     def __resfun(self, beta):
-        return self.y - beta[0] - np.dot(self.x, beta[1:])
+        if self.intercept == False:
+            return self.y - np.dot(self.x, beta[0:])
+        elif self.intercept == True:
+            return self.y - beta[0] - np.dot(self.x, beta[1:])
 
     def __teJ(self):
         '''Efficiencies estimates using the conditional mean approach 
