@@ -1,8 +1,8 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from math import sqrt, pi, log
-from scipy.stats import norm
-import scipy.optimize as opt
+from scipy.stats import norm, t
+from scipy.optimize import minimize
 from .constant import FUN_PROD, FUN_COST, TE_teJ, TE_te, TE_teMod
 from .utils import tools
 
@@ -45,13 +45,15 @@ class SFA:
             elif self.intercept == True:
                 K = len(self.x[0]) + 1
             beta0, lamda0 = parm[0:K], parm[K]
-            e = self.__resfun(beta0)
-            s = np.sum(e**2)/N
-            z = -lamda0*e/sqrt(s)
+            res = self.__resfun(beta0)
+            sig2 = np.sum(res**2)/N
+            z  = -lamda0*res/sqrt(sig2)
             pz = np.maximum(norm.cdf(z), 1e-323)
-            return N/2*log(pi/2) + N/2*log(s) - np.sum(np.log(pz)) + N/2.0
+            return N/2*log(pi/2) + N/2*log(sig2) - np.sum(np.log(pz)) + N/2.0
+        
 
-        fit = opt.minimize(__loglik, parm, method='BFGS').x
+        fit = minimize(__loglik, parm, method='BFGS')
+        self.pars = fit.x
 
         # beta, residuals, lambda, sigma^2
         if self.intercept == False:
@@ -60,14 +62,21 @@ class SFA:
             K = len(self.x[0]) + 1
         self.beta = fit[0:K]
         self.residuals = self.__resfun(self.beta)
-        self.lamda = fit[K]
+        self.lamda = self.pars[K]
         self.sigma2 = np.sum(self.residuals ** 2)/self.residuals.shape[0]
 
         # sigma_u^2, sigma_v^2
         self.s2u = self.lamda**2 / (1+self.lamda**2) * self.sigma2
         self.s2v = self.sigma2 / (1+self.lamda**2)
 
-        return self.beta, self.residuals, self.lamda, self.sigma2, self.s2u, self.s2v
+        # calculate standard error, t-value, and p-value
+        N = len(self.x)
+        self.vcov = fit.hess_inv
+        self.std_err = np.sqrt(np.diag(self.vcov))
+        self.t_value = self.pars / self.std_err
+        self.p_value = np.around(2 * t.sf(abs(self.t_value), N-K-2), decimals=3)
+
+        return self.beta, self.residuals, self.lamda, self.sigma2, self.s2u, self.s2v, self.std_err, self.t_value, self.p_value
 
     def __resfun(self, beta):
         if self.intercept == False:
@@ -155,4 +164,15 @@ class SFA:
 
     def get_sigmav2(self):
         '''Return the sigma_v**2'''
-        return self.__mle()[5]
+    
+    def get_std_err(self):
+        '''Return the standard errors'''
+        return self.__mle()[6]
+
+    def get_t_value(self):
+        '''Return the standard errors'''
+        return self.__mle()[7]
+
+    def get_p_value(self):
+        '''Return the standard errors'''
+        return self.__mle()[8]
