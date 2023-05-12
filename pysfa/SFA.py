@@ -22,8 +22,8 @@ class SFA:
               fun (String, optional): FUN_PROD (production function) or FUN_COST (cost function). Defaults to FUN_PROD.
               method (String, optional): TE_teJ, TE_te, or TE_teMod. Defaults to TE_teJ.
           """
-        self.y, self.x = tools.assert_valid_basic_data(y, x, fun)
         self.fun, self.intercept, self.lamda0, self.method = fun, intercept, lamda0, method
+        self.y, self.x = tools.assert_valid_basic_data(y, x, self.fun)
 
     def __mle(self):
 
@@ -47,22 +47,20 @@ class SFA:
             beta0, lamda0 = parm[0:K], parm[K]
             res = self.__resfun(beta0)
             sig2 = np.sum(res**2)/N
-            z  = -lamda0*res/sqrt(sig2)
+            z = -lamda0*res/sqrt(sig2)
             pz = np.maximum(norm.cdf(z), 1e-323)
             return N/2*log(pi/2) + N/2*log(sig2) - np.sum(np.log(pz)) + N/2.0
-        
 
         fit = minimize(__loglik, parm, method='BFGS')
-        self.pars = fit.x
 
         # beta, residuals, lambda, sigma^2
         if self.intercept == False:
             K = len(self.x[0])
         elif self.intercept == True:
             K = len(self.x[0]) + 1
-        self.beta = fit[0:K]
+        self.beta = fit.x[0:K]
         self.residuals = self.__resfun(self.beta)
-        self.lamda = self.pars[K]
+        self.lamda = fit.x[K]
         self.sigma2 = np.sum(self.residuals ** 2)/self.residuals.shape[0]
 
         # sigma_u^2, sigma_v^2
@@ -70,13 +68,11 @@ class SFA:
         self.s2v = self.sigma2 / (1+self.lamda**2)
 
         # calculate standard error, t-value, and p-value
-        N = len(self.x)
         self.vcov = fit.hess_inv
         self.std_err = np.sqrt(np.diag(self.vcov))
-        self.t_value = self.pars / self.std_err
-        self.p_value = np.around(2 * t.sf(abs(self.t_value), N-K-2), decimals=3)
-
-        return self.beta, self.residuals, self.lamda, self.sigma2, self.s2u, self.s2v, self.std_err, self.t_value, self.p_value
+        self.tvalue = fit.x / self.std_err
+        self.pvalue = np.around(
+            2 * t.sf(abs(self.tvalue), len(self.x)-K-2), decimals=3)
 
     def __resfun(self, beta):
         if self.intercept == False:
@@ -125,54 +121,57 @@ class SFA:
             self.lamda**2/(1+self.lamda**2)
         return np.exp(np.minimum(0, -self.ustar))
 
-    def get_technical_efficiency(self):
-        """
-        Args:
-              method (String, optional): TE_teJ, TE_te, or TE_teMod. Defaults to TE_teJ.
+    def __model_estimation(self):
+        '''Model estimation'''
 
-        calculate technical efficiency
-        """
         self.__mle()
         if self.method == TE_teJ:
-            return self.__teJ()
+            self.te = self.__teJ()
         elif self.method == TE_te:
-            return self.__te()
+            self.te = self.__te()
         elif self.method == TE_teMod:
-            return self.__teMod()
+            self.te = self.__teMod()
         else:
             raise ValueError("Undefined decomposition technique.")
 
+        return self.beta, self.residuals, self.lamda, self.sigma2, self.s2u, self.s2v, self.std_err, self.tvalue, self.pvalue, self.te
+
     def get_beta(self):
         '''Return the estimated coefficients'''
-        return self.__mle()[0]
+        return self.__model_estimation()[0]
 
     def get_residuals(self):
         '''Return the residuals'''
-        return self.__mle()[1]
+        return self.__model_estimation()[1]
 
     def get_lambda(self):
         '''Return the lambda'''
-        return self.__mle()[2]
+        return self.__model_estimation()[2]
 
     def get_sigma2(self):
         '''Return the sigma2'''
-        return self.__mle()[3]
+        return self.__model_estimation()[3]
 
     def get_sigmau2(self):
         '''Return the sigma_u**2'''
-        return self.__mle()[4]
+        return self.__model_estimation()[4]
 
     def get_sigmav2(self):
         '''Return the sigma_v**2'''
-    
+        return self.__model_estimation()[5]
+
     def get_std_err(self):
         '''Return the standard errors'''
-        return self.__mle()[6]
+        return self.__model_estimation()[6]
 
-    def get_t_value(self):
+    def get_tvalue(self):
         '''Return the standard errors'''
-        return self.__mle()[7]
+        return self.__model_estimation()[7]
 
-    def get_p_value(self):
+    def get_pvalue(self):
         '''Return the standard errors'''
-        return self.__mle()[8]
+        return self.__model_estimation()[8]
+
+    def get_technical_efficiency(self):
+        '''Return the technical efficiency'''
+        return self.__model_estimation()[9]
