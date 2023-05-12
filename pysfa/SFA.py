@@ -25,6 +25,11 @@ class SFA:
         self.fun, self.intercept, self.lamda0, self.method = fun, intercept, lamda0, method
         self.y, self.x = tools.assert_valid_basic_data(y, x, self.fun)
 
+        if self.fun == FUN_COST:
+            self.sign = -1
+        else:
+            self.sign = 1
+
     def __mle(self):
 
         # initial OLS regression
@@ -84,10 +89,6 @@ class SFA:
         '''Efficiencies estimates using the conditional mean approach 
             Jondrow et al. (1982, 235)'''
 
-        if self.fun == FUN_COST:
-            self.sign == -1
-        else:
-            self.sign = 1
         self.ustar = - self.sign * self.residuals * \
             self.lamda**2/(1+self.lamda**2)
         self.sstar = self.lamda/(1+self.lamda**2)*sqrt(self.sigma2)
@@ -98,10 +99,6 @@ class SFA:
         '''Efficiencies estimated by minimizing the mean square error; 
             Eq. (7.21) in Bogetoft and Otto (2011, 219) and Battese and Coelli (1988, 392)'''
 
-        if self.fun == FUN_COST:
-            self.sign == -1
-        else:
-            self.sign = 1
         self.ustar = - self.sign * self.residuals * \
             self.lamda**2/(1+self.lamda**2)
         self.sstar = self.lamda/(1+self.lamda**2)*sqrt(self.sigma2)
@@ -113,10 +110,6 @@ class SFA:
         '''Efficiencies estimates using the conditional mode approach;
             Bogetoft and Otto (2011, 219), Jondrow et al. (1982, 235)'''
 
-        if self.fun == FUN_COST:
-            self.sign == -1
-        else:
-            self.sign = 1
         self.ustar = - self.sign * self.residuals * \
             self.lamda**2/(1+self.lamda**2)
         return np.exp(np.minimum(0, -self.ustar))
