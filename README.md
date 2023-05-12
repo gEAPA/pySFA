@@ -45,6 +45,11 @@ print(res.get_sigma2())
 print(res.get_sigmau2())
 print(res.get_sigmav2())
 
+# print statistics
+print(res.get_pvalue())
+print(res.get_tvalue())
+print(res.get_std_err())
+
 # print TE
 print(res.get_technical_efficiency())
 ```
