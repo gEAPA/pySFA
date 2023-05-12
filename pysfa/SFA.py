@@ -1,9 +1,9 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from math import sqrt, pi, log
-from scipy.stats import norm
-import scipy.optimize as opt
-from .constant import FUN_PROD, FUN_COST, TE_teJ, TE_te, TE_teMod, LOG_hnormal, LOG_tnormal, LOG_exp
+from scipy.stats import norm, t
+from scipy.optimize import minimize
+from .constant import FUN_PROD, FUN_COST, TE_teJ, TE_te, TE_teMod
 from .utils import tools
 
 
@@ -11,7 +11,7 @@ class SFA:
     """Stochastic frontier analysis (SFA) 
     """
 
-    def __init__(self, y, x, loglik=LOG_hnormal, fun=FUN_PROD, lamda0=1, method=TE_teJ):
+    def __init__(self, y, x, fun=FUN_PROD, lamda0=1, method=TE_teJ):
         """SFA model
 
           Args:
@@ -21,7 +21,6 @@ class SFA:
           """
         self.y, self.x = tools.assert_valid_basic_data(y, x, fun)
         self.fun, self.lamda0, self.method = fun, lamda0, method
-        self.loglik = loglik
 
     def __mle(self):
 
@@ -31,46 +30,39 @@ class SFA:
         parm = np.concatenate((beta0, [self.lamda0]), axis=0)
 
         # Maximum Likelihood Estimation
-        def __loglik_hnormal(parm):
+        def __loglik(parm):
             ''' Log-likelihood function normal/half-normal distribution'''
             N, K = len(self.x), len(self.x[0]) + 1
             beta0, lamda0 = parm[0:K], parm[K]
-            res_ols = self.__resfun(beta0)
-            sig2 = np.sum(res_ols**2)/N
-            z  = -lamda0*res_ols/sqrt(sig2)
+            res = self.__resfun(beta0)
+            sig2 = np.sum(res**2)/N
+            z  = -lamda0*res/sqrt(sig2)
             pz = np.maximum(norm.cdf(z), 1e-323)
             return N/2*log(pi/2) + N/2*log(sig2) - np.sum(np.log(pz)) + N/2.0
         
-        def __loglik_exp(parm):
-            ''' Log-likelihood function normal/exponential distribution'''
-            N, K = len(self.x), len(self.x[0]) + 1
-            beta0 = parm[0:K]
-            res_ols = self.__resfun(beta0)
-            sigu2 = np.var(res_ols)*(1-2/pi)
-            sigv2 = np.var(res_ols)
-            z = (-res_ols-(sigv2/np.sqrt(sigu2))) / np.sqrt(sigv2)
-            pz = np.maximum(norm.cdf(z), 1e-323)
-            return N/2*log(sigu2) - N/2*(sigv2/sigu2) - np.sum(np.log(pz)) - np.sum(res_ols)/np.sqrt(sigu2)
 
-        if self.loglik == LOG_hnormal:
-            maxlik_ = __loglik_hnormal
-        elif self.loglik == LOG_exp:
-            maxlik_ = __loglik_exp
-
-        fit = opt.minimize(maxlik_, parm, method='BFGS').x
+        fit = minimize(__loglik, parm, method='BFGS')
+        self.pars = fit.x
 
         # beta, residuals, lambda, sigma^2
         K = len(self.x[0]) + 1
-        self.beta = fit[0:K]
+        self.beta =self.pars[0:K]
         self.residuals = self.__resfun(self.beta)
-        self.lamda = fit[K]
+        self.lamda = self.pars[K]
         self.sigma2 = np.sum(self.residuals ** 2)/self.residuals.shape[0]
 
         # sigma_u^2, sigma_v^2
         self.s2u = self.lamda**2 / (1+self.lamda**2) * self.sigma2
         self.s2v = self.sigma2 / (1+self.lamda**2)
 
-        return self.beta, self.residuals, self.lamda, self.sigma2, self.s2u, self.s2v
+        # calculate standard error, t-value, and p-value
+        N = len(self.x)
+        self.vcov = fit.hess_inv
+        self.std_err = np.sqrt(np.diag(self.vcov))
+        self.t_value = self.pars / self.std_err
+        self.p_value = np.around(2 * t.sf(abs(self.t_value), N-K-2), decimals=3)
+
+        return self.beta, self.residuals, self.lamda, self.sigma2, self.s2u, self.s2v, self.std_err, self.t_value, self.p_value
 
     def __resfun(self, beta):
         return self.y - beta[0] - np.dot(self.x, beta[1:])
@@ -156,3 +148,15 @@ class SFA:
     def get_sigmav2(self):
         '''Return the sigma_v**2'''
         return self.__mle()[5]
+    
+    def get_std_err(self):
+        '''Return the standard errors'''
+        return self.__mle()[6]
+
+    def get_t_value(self):
+        '''Return the standard errors'''
+        return self.__mle()[7]
+
+    def get_p_value(self):
+        '''Return the standard errors'''
+        return self.__mle()[8]
