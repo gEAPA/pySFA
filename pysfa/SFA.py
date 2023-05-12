@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 from math import sqrt, pi, log
 from scipy.stats import norm, t
@@ -57,15 +58,18 @@ class SFA:
             return N/2*log(pi/2) + N/2*log(sig2) - np.sum(np.log(pz)) + N/2.0
 
         fit = minimize(__loglik, parm, method='BFGS')
+        self.pars = fit.x
 
         # beta, residuals, lambda, sigma^2
         if self.intercept == False:
+            self.names = ['x'+str(i+1) for i in range(len(self.x[0]))] + ['lambda']
             K = len(self.x[0])
         elif self.intercept == True:
+            self.names = ['(Intercept)'] + ['x'+str(i+1) for i in range(len(self.x[0]))] + ['lambda']
             K = len(self.x[0]) + 1
-        self.beta = fit.x[0:K]
+        self.beta = self.pars[0:K]
         self.residuals = self.__resfun(self.beta)
-        self.lamda = fit.x[K]
+        self.lamda = self.pars[K]
         self.sigma2 = np.sum(self.residuals ** 2)/self.residuals.shape[0]
 
         # sigma_u^2, sigma_v^2
@@ -168,3 +172,14 @@ class SFA:
     def get_technical_efficiency(self):
         '''Return the technical efficiency'''
         return self.__model_estimation()[9]
+
+    def summary(self):
+        '''Print the summary of the estimation results'''
+        self.__mle()
+        output = np.vstack((self.pars, self.std_err, self.tvalue, self.pvalue))
+        index = ['Parameters', 'Std.err', 't-value', 'Pr(>|t|)']
+        re = pd.DataFrame(output, index=index, columns=self.names).round(3)
+        re = re.T
+        print(re)
+        print('sigma^2: ', self.get_sigma2().round(3))
+        print('sigma_v^2: ', self.get_sigmav2().round(3),'; sigma_u^2: ', self.get_sigmau2().round(3))
