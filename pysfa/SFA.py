@@ -72,7 +72,7 @@ class SFA:
         self.std_err = np.sqrt(np.diag(self.vcov))
         self.tvalue = fit.x / self.std_err
         self.pvalue = np.around(
-            2 * t.sf(abs(self.tvalue), len(self.x)-K-2), decimals=3)
+            2 * t.sf(abs(self.tvalue), len(self.x) - K), decimals=3)
 
     def __resfun(self, beta):
         if self.intercept == False:
