@@ -31,7 +31,7 @@ class SFA:
         else:
             self.sign = 1
 
-    def __mle(self):
+    def optimize(self):
 
         # initial OLS regression
         if self.intercept == False:
@@ -57,47 +57,62 @@ class SFA:
             pz = np.maximum(norm.cdf(z), 1e-323)
             return N/2*log(pi/2) + N/2*log(sig2) - np.sum(np.log(pz)) + N/2.0
 
-        fit = minimize(__loglik, parm, method='BFGS')
-        self.pars = fit.x
-
-        # beta, residuals, lambda, sigma^2
-        if self.intercept == False:
-            self.names = ['x'+str(i+1)
-                          for i in range(len(self.x[0]))] + ['lambda']
-            K = len(self.x[0])
-        elif self.intercept == True:
-            self.names = ['(Intercept)'] + ['x'+str(i+1)
-                                            for i in range(len(self.x[0]))] + ['lambda']
-            K = len(self.x[0]) + 1
-        self.beta = self.pars[0:K]
-        self.residuals = self.__resfun(self.beta)
-        self.lamda = self.pars[K]
-        self.sigma2 = np.sum(self.residuals ** 2)/self.residuals.shape[0]
-
-        # sigma_u^2, sigma_v^2
-        self.s2u = self.lamda**2 / (1+self.lamda**2) * self.sigma2
-        self.s2v = self.sigma2 / (1+self.lamda**2)
-
-        # calculate standard error, t-value, and p-value
-        self.vcov = fit.hess_inv
-        self.std_err = np.sqrt(np.diag(self.vcov))
-        self.tvalue = self.pars / self.std_err
-        self.pvalue = np.around(
-            2 * t.sf(abs(self.tvalue), len(self.x) - K), decimals=3)
+        return minimize(__loglik, parm, method='BFGS')
 
     def __resfun(self, beta):
+        ''' Residual function'''
         if self.intercept == False:
             return self.y - np.dot(self.x, beta[0:])
         elif self.intercept == True:
             return self.y - beta[0] - np.dot(self.x, beta[1:])
 
+    def get_beta(self):
+        '''Return the estimated coefficients'''
+        return self.optimize().x[0:-1]
+
+    def get_lambda(self):
+        '''Return the estimated lambda'''
+        return self.optimize().x[-1]
+
+    def get_residuals(self):
+        '''Return the estimated residuals'''
+        return self.__resfun(self.optimize().x[0:-1])
+
+    def get_sigma2(self):
+        '''Return the estimated sigma2'''
+        return np.sum(self.get_residuals()**2)/len(self.x)
+
+    def get_sigmau2(self):
+        '''Return the estimated sigmau2'''
+        return self.get_lambda()**2 / (1 + self.get_lambda()**2) * self.get_sigma2()
+
+    def get_sigmav2(self):
+        '''Return the estimated sigmav2'''
+        return self.get_sigma2()/(1 + self.get_lambda()**2)
+
+    def get_std_err(self):
+        '''Return the standard errors'''
+        return np.sqrt(np.diag(self.optimize().hess_inv))
+
+    def get_tvalue(self):
+        '''Return the t-values'''
+        return self.optimize().x/self.get_std_err()
+
+    def get_pvalue(self):
+        '''Return the p-values'''
+        if self.intercept == False:
+            K = len(self.x[0])
+        elif self.intercept == True:
+            K = len(self.x[0]) + 1
+        return np.around(2*t.sf(np.abs(self.get_tvalue()), len(self.x) - K), decimals=3)
+
     def __teJ(self):
         '''Efficiencies estimates using the conditional mean approach 
             Jondrow et al. (1982, 235)'''
 
-        self.ustar = - self.sign * self.residuals * \
-            self.lamda**2/(1+self.lamda**2)
-        self.sstar = self.lamda/(1+self.lamda**2)*sqrt(self.sigma2)
+        self.ustar = - self.sign * self.get_residuals() * \
+            self.get_lambda()**2/(1+self.get_lambda()**2)
+        self.sstar = self.get_lambda()/(1+self.get_lambda()**2)*sqrt(self.get_sigma2())
         return np.exp(-self.ustar - self.sstar *
                       (norm.pdf(self.ustar/self.sstar)/norm.cdf(self.ustar/self.sstar)))
 
@@ -105,9 +120,9 @@ class SFA:
         '''Efficiencies estimated by minimizing the mean square error; 
             Eq. (7.21) in Bogetoft and Otto (2011, 219) and Battese and Coelli (1988, 392)'''
 
-        self.ustar = - self.sign * self.residuals * \
-            self.lamda**2/(1+self.lamda**2)
-        self.sstar = self.lamda/(1+self.lamda**2)*sqrt(self.sigma2)
+        self.ustar = - self.sign * self.get_residuals() * \
+            self.get_lambda()**2/(1+self.get_lambda()**2)
+        self.sstar = self.get_lambda()/(1+self.get_lambda()**2)*sqrt(self.get_sigma2())
         return norm.cdf(self.ustar/self.sstar - self.sstar) / \
             norm.cdf(self.ustar/self.sstar) * \
             np.exp(self.sstar**2/2 - self.ustar)
@@ -116,73 +131,38 @@ class SFA:
         '''Efficiencies estimates using the conditional mode approach;
             Bogetoft and Otto (2011, 219), Jondrow et al. (1982, 235)'''
 
-        self.ustar = - self.sign * self.residuals * \
-            self.lamda**2/(1+self.lamda**2)
+        self.ustar = - self.sign * self.get_residuals() * \
+            self.get_lambda()**2/(1+self.get_lambda()**2)
         return np.exp(np.minimum(0, -self.ustar))
 
-    def __model_estimation(self):
-        '''Model estimation'''
+    def get_technical_efficiency(self):
+        '''Return the technical efficiency estimates'''
 
-        self.__mle()
         if self.method == TE_teJ:
-            self.te = self.__teJ()
+            return self.__teJ()
         elif self.method == TE_te:
-            self.te = self.__te()
+            return self.__te()
         elif self.method == TE_teMod:
-            self.te = self.__teMod()
+            return self.__teMod()
         else:
             raise ValueError("Undefined decomposition technique.")
 
-        return self.beta, self.residuals, self.lamda, self.sigma2, self.s2u, self.s2v, self.std_err, self.tvalue, self.pvalue, self.te
-
-    def get_beta(self):
-        '''Return the estimated coefficients'''
-        return self.__model_estimation()[0]
-
-    def get_residuals(self):
-        '''Return the residuals'''
-        return self.__model_estimation()[1]
-
-    def get_lambda(self):
-        '''Return the lambda'''
-        return self.__model_estimation()[2]
-
-    def get_sigma2(self):
-        '''Return the sigma2'''
-        return self.__model_estimation()[3]
-
-    def get_sigmau2(self):
-        '''Return the sigma_u**2'''
-        return self.__model_estimation()[4]
-
-    def get_sigmav2(self):
-        '''Return the sigma_v**2'''
-        return self.__model_estimation()[5]
-
-    def get_std_err(self):
-        '''Return the standard errors'''
-        return self.__model_estimation()[6]
-
-    def get_tvalue(self):
-        '''Return the standard errors'''
-        return self.__model_estimation()[7]
-
-    def get_pvalue(self):
-        '''Return the standard errors'''
-        return self.__model_estimation()[8]
-
-    def get_technical_efficiency(self):
-        '''Return the technical efficiency'''
-        return self.__model_estimation()[9]
-
     def summary(self):
         '''Print the summary of the estimation results'''
-        self.__mle()
-        output = np.vstack((self.pars, self.std_err, self.tvalue, self.pvalue))
+
+        if self.intercept == False:
+            self.names = ['x'+str(i+1)
+                          for i in range(len(self.x[0]))] + ['lambda']
+        elif self.intercept == True:
+            self.names = ['(Intercept)'] + ['x'+str(i+1)
+                                            for i in range(len(self.x[0]))] + ['lambda']
+
+        output = np.vstack(
+            (np.round(self.optimize().x, decimals=5), np.round(self.get_std_err(), decimals=6), np.round(self.get_tvalue(), decimals=3), self.get_pvalue()))
         index = ['Parameters', 'Std.err', 't-value', 'Pr(>|t|)']
-        re = pd.DataFrame(output, index=index, columns=self.names).round(3)
-        re = re.T
+        re = pd.DataFrame(output, index=index, columns=self.names).T
         print(re)
-        print('sigma^2: ', self.get_sigma2().round(3))
-        print('sigma_v^2: ', self.get_sigmav2().round(3),
-              '; sigma_u^2: ', self.get_sigmau2().round(3))
+        print('sigma2: ', self.get_sigma2().round(5))
+        print('sigmav2: ', self.get_sigmav2().round(5),
+              '; sigmau2: ', self.get_sigmau2().round(5))
+        print('log likelihood: ', round(self.optimize().fun, 5))
