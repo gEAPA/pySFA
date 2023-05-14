@@ -51,7 +51,7 @@ print(res.get_tvalue())
 print(res.get_std_err())
 
 # OR print summary
-print(res.summary)
+print(res.summary())
 
 # print TE
 print(res.get_technical_efficiency())
