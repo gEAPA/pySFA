@@ -35,6 +35,7 @@ x = np.log(df.x)
 # Estimate SFA model
 res = SFA.SFA(y, x, fun=SFA.FUN_PROD, method=SFA.TE_teJ)
 res.optimize()
+
 # print estimates
 print(res.get_beta())
 print(res.get_residuals())
