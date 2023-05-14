@@ -62,10 +62,12 @@ class SFA:
 
         # beta, residuals, lambda, sigma^2
         if self.intercept == False:
-            self.names = ['x'+str(i+1) for i in range(len(self.x[0]))] + ['lambda']
+            self.names = ['x'+str(i+1)
+                          for i in range(len(self.x[0]))] + ['lambda']
             K = len(self.x[0])
         elif self.intercept == True:
-            self.names = ['(Intercept)'] + ['x'+str(i+1) for i in range(len(self.x[0]))] + ['lambda']
+            self.names = ['(Intercept)'] + ['x'+str(i+1)
+                                            for i in range(len(self.x[0]))] + ['lambda']
             K = len(self.x[0]) + 1
         self.beta = self.pars[0:K]
         self.residuals = self.__resfun(self.beta)
@@ -79,7 +81,7 @@ class SFA:
         # calculate standard error, t-value, and p-value
         self.vcov = fit.hess_inv
         self.std_err = np.sqrt(np.diag(self.vcov))
-        self.tvalue = fit.x / self.std_err
+        self.tvalue = self.pars / self.std_err
         self.pvalue = np.around(
             2 * t.sf(abs(self.tvalue), len(self.x) - K), decimals=3)
 
@@ -182,4 +184,5 @@ class SFA:
         re = re.T
         print(re)
         print('sigma^2: ', self.get_sigma2().round(3))
-        print('sigma_v^2: ', self.get_sigmav2().round(3),'; sigma_u^2: ', self.get_sigmau2().round(3))
+        print('sigma_v^2: ', self.get_sigmav2().round(3),
+              '; sigma_u^2: ', self.get_sigmau2().round(3))
